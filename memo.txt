@@ -1,0 +1,30 @@
+-- 一時Pythonファイルのパスを設定
+set tempPythonFile to folderPath & "ocr_script.py"
+
+-- Pythonスクリプトを書き出し (printf を使用)
+do shell script "printf %s " & quoted form of ocr_script & " > " & quoted form of tempPythonFile
+
+-- ファイルの内容を確認（必要に応じコメントアウト）
+do shell script "cat " & quoted form of tempPythonFile
+
+-- Pythonスクリプトを実行（python3 コマンドを使用）
+try
+	do shell script "python3 " & quoted form of tempPythonFile & " 2>&1"
+on error error_message
+	-- エラーメッセージをログに保存
+	set errorLogFile to folderPath & "error_log.txt"
+	set fileDescriptor to open for access (errorLogFile as POSIX file) with write permission
+	write error_message to fileDescriptor
+	close access fileDescriptor
+	display dialog "An error occurred. Please check the error log." buttons {"OK"} default button "OK"
+	return
+end try
+
+-- スクリプト実行後に一時Pythonファイルを削除
+do shell script "rm " & quoted form of tempPythonFile
+
+-- スクリーンショット画像を削除
+deleteFiles(screenshotPaths)
+
+-- 終了メッセージ
+display dialog "Screenshots have been captured, processed with OCR, and uploaded to Google Docs." buttons {"OK"} default button "OK"
