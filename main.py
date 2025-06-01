@@ -6,6 +6,10 @@ from markdown_it import MarkdownIt
 from google.cloud import vision_v1
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from PyPDF2 import PdfReader, PdfWriter
+import io
 
 # コマンドライン引数の設定
 parser = argparse.ArgumentParser(description='KindleスクリーンショットのOCR処理')
@@ -110,8 +114,41 @@ except Exception as e:
 
 # PDFを作成
 try:
+    # まず画像からPDFを作成
     img_files = [os.path.join(folder_path, f) for f in image_files]
-    subprocess.run(['/usr/local/bin/img2pdf'] + img_files + ['-o', pdf_output_file], check=True)
+    temp_pdf = folder_path + 'temp.pdf'
+    subprocess.run(['/usr/local/bin/img2pdf'] + img_files + ['-o', temp_pdf], check=True)
+
+    # OCRテキストを埋め込んだPDFを作成
+    output_pdf = PdfWriter()
+    reader = PdfReader(temp_pdf)
+    
+    for i, (page, image_file) in enumerate(zip(reader.pages, image_files)):
+        # 各ページのOCRテキストを取得
+        image_path = os.path.join(folder_path, image_file)
+        ocr_text = perform_ocr(image_path)
+        
+        # 新しいPDFページを作成
+        packet = io.BytesIO()
+        c = canvas.Canvas(packet, pagesize=A4)
+        c.setFont("Helvetica", 1)  # 最小のフォントサイズ
+        c.setFillColorRGB(1, 1, 1)  # 白色（不可視）
+        c.drawString(0, 0, ocr_text)  # テキストを配置
+        c.save()
+        
+        # テキストレイヤーを追加
+        packet.seek(0)
+        text_pdf = PdfReader(packet)
+        page.merge_page(text_pdf.pages[0])
+        output_pdf.add_page(page)
+
+    # 最終的なPDFを保存
+    with open(pdf_output_file, 'wb') as output_file:
+        output_pdf.write(output_file)
+
+    # 一時ファイルを削除
+    os.remove(temp_pdf)
+    
 except Exception as e:
     print(f'Error in PDF creation: {e}')
     exit(1)
