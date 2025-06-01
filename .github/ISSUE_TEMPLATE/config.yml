@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 質問・相談
+    url: https://github.com/it-walker/book2doc/discussions
+    about: 機能の使い方や実装についての質問・相談はこちら
+  - name: セキュリティ報告
+    url: https://github.com/it-walker/book2doc/security/advisories/new
+    about: セキュリティに関する問題の報告はこちら 
