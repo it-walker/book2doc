@@ -1,3 +1,6 @@
+-- グローバル変数の宣言
+global pageTurnDirection
+
 -- ログを記録する関数
 on writeLog(logMessage)
 	try
@@ -52,9 +55,10 @@ on turnPage()
 		
 		-- ページめくり
 		tell application "System Events"
-			keystroke keychar
+			keystroke (ASCII character pageTurnDirection)
 			delay 0.2 -- ページめくり後の安定時間
 		end tell
+		
 		writeLog("ページをめくりました")
 		return true
 	on error errMsg
@@ -66,18 +70,17 @@ end turnPage
 
 -- メインスクリプト
 -- ページめくり方向の定義
-set totalPages to 5 -- テスト用に5ページに変更
--- set totalPages to 350 -- スクリーンショット数
-set keychar to (ASCII character 29) -- ページめくり方向(28=左,29=右)
-set currentDate to do shell script "date +%Y%m%d_%H%M%S"
-set folderPath to (POSIX path of (path to desktop folder)) & "Kindle_Screenshots_" & currentDate & "/"
-
--- キャプチャする範囲を指定 (x, y, width, height)
-set captureRect to "390,99,754,926"
+-- set totalPages to 5 -- テスト用に5ページに変更
+set totalPages to 350 -- スクリーンショット数
+set pageTurnDirection to 28 -- ページめくり方向(28=左,29=右)
+set directionText to "右"
+if pageTurnDirection is 28 then
+	set directionText to "左"
+end if
 
 -- 処理開始の確認
 writeLog("スクリプトを開始します")
-set startResponse to display dialog "スクリーンショットの取得を開始しますか？" & return & return & "処理内容:" & return & "1. スクリーンショットの取得（" & totalPages & "ページ）" buttons {"開始", "キャンセル"} default button "開始"
+set startResponse to display dialog "スクリーンショットの取得を開始しますか？" & return & return & "処理内容:" & return & "1. スクリーンショットの取得（" & totalPages & "ページ）" & return & "2. ページめくり方向: " & directionText buttons {"開始", "キャンセル"} default button "開始"
 if button returned of startResponse is "キャンセル" then
 	writeLog("ユーザーによって処理がキャンセルされました")
 	return
@@ -85,6 +88,8 @@ end if
 writeLog("処理を開始します")
 
 -- 新規フォルダの作成
+set currentDate to do shell script "date +%Y%m%d_%H%M%S"
+set folderPath to (POSIX path of (path to desktop folder)) & "Kindle_Screenshots_" & currentDate & "/"
 if not createFolder(folderPath) then
 	return
 end if
